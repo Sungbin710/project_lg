@@ -1,0 +1,14 @@
+title FR04
+
+participant User
+participant Client
+participant Server
+
+User-->Client:사용자 정보 출력 요청
+Client->Server:사용자 ID 전송
+
+activate Server
+note right of Server:사용자 정보 검색
+Client<-Server: 사용자 정보 전송
+deactivate Server
+User<--Client:사용자 정보 출력

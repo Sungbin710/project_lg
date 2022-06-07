@@ -1,0 +1,19 @@
+title FR01
+
+participant User
+participant Client
+participant Server
+
+User-->Client:사용자 정보 입력
+activate Client
+
+note right of Client:사용자 정보 형식 검증
+Client->Server:사용자 등록 요청
+deactivate Client
+activate Server
+note right of Server:중복되는 ID 확인 및 사용자 정보 저장
+Client<-Server: 사용자 등록 승인 여부 전송
+
+deactivate Server
+
+User<--Client:사용자 등록 승인 여부 출력

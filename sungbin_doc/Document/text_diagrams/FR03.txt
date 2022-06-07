@@ -1,0 +1,34 @@
+title FR03
+
+participant User
+participant Client
+participant Server
+
+User-->Client:미디어 이름 입력
+
+activate Client
+note right of Client:재생 가능한 미디어인지 검증
+Client->Server:해당 미디어에 대해 이전에 재생한 기록 요청
+deactivate Client
+
+activate Server
+note right of Server:미디어 재생 기록 검색
+Client<-Server:이전에 재생한 기록 전송
+deactivate Server
+
+activate Client
+User<--Client:미디어스트림 전송
+
+activate User
+User-->Client:미디어 재생 제어
+
+
+
+deactivate User
+Client->Server:최종 재생 기록 갱신 요청
+
+activate Server
+
+deactivate Client
+User<--Client:미디어 재생 종료 출력
+note right of Server:미디어 재생 기록 갱신
