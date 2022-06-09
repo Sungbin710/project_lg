@@ -13,3 +13,6 @@ basic4: basic4.c
 
 test: test.c
 	gcc -o test test.c `pkg-config --cflags --libs gstreamer-1.0`
+
+clean:
+	rm basic5

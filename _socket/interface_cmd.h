@@ -1,4 +1,4 @@
-#define BUFFER_SIZE  128
+#define BUFFER_SIZE  512
 
 enum CMD{
     REGISTER = 0,

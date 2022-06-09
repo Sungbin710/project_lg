@@ -13,6 +13,8 @@
 #include <gdk/gdkquartz.h>
 #endif
 
+int start_position;
+
 /* Structure to contain all our information, so we can pass it around */
 typedef struct _CustomData {
   GstElement *playbin;           /* Our one and only pipeline */
@@ -78,10 +80,10 @@ static void stop_cb (GtkButton *button, CustomData *data) {
 /* This function is called when the main window is closed */
 static void delete_event_cb (GtkWidget *widget, GdkEvent *event, CustomData *data) {
 	
-  gint64 current = -1;
-  gst_element_query_position (data->playbin, GST_FORMAT_TIME, &current);
+  data->last_playback = GST_CLOCK_TIME_NONE;  // #define GST_CLOCK_TIME_NONE ((GstClockTime) -1)
+  gst_element_query_position (data->playbin, GST_FORMAT_TIME, &(data->last_playback));
   g_print ("Position %" GST_TIME_FORMAT " / %" GST_TIME_FORMAT "\n",
-            GST_TIME_ARGS (current), GST_TIME_ARGS (data->duration));	
+            GST_TIME_ARGS (data->last_playback), GST_TIME_ARGS (data->duration));	
   
   stop_cb (NULL, data);
   gtk_main_quit ();
@@ -185,7 +187,7 @@ static gboolean refresh_ui (CustomData *data) {
   }
 	
   if(data->is_start){
-    current = 40 * GST_SECOND;	
+    current = start_position * GST_SECOND;	
 	seek_to_time(data->playbin, current);
     g_signal_handler_block (data->slider, data->slider_update_signal_id);
     /* Set the position of the slider to the current pipeline position, in SECONDS */
@@ -195,15 +197,15 @@ static gboolean refresh_ui (CustomData *data) {
 	data->is_start = FALSE;
   }
   else{
-  if (gst_element_query_position (data->playbin, GST_FORMAT_TIME, &current)) {
-    /* Block the "value-changed" signal, so the slider_cb function is not called
-     * (which would trigger a seek the user has not requested) */
-    g_signal_handler_block (data->slider, data->slider_update_signal_id);
-    /* Set the position of the slider to the current pipeline position, in SECONDS */
-    gtk_range_set_value (GTK_RANGE (data->slider), (gdouble)current / GST_SECOND);
-    /* Re-enable the signal */
-    g_signal_handler_unblock (data->slider, data->slider_update_signal_id);
-  }
+    if (gst_element_query_position (data->playbin, GST_FORMAT_TIME, &current)) {
+      /* Block the "value-changed" signal, so the slider_cb function is not called
+      * (which would trigger a seek the user has not requested) */
+      g_signal_handler_block (data->slider, data->slider_update_signal_id);
+      /* Set the position of the slider to the current pipeline position, in SECONDS */
+      gtk_range_set_value (GTK_RANGE (data->slider), (gdouble)current / GST_SECOND);
+      /* Re-enable the signal */
+      g_signal_handler_unblock (data->slider, data->slider_update_signal_id);
+    }
   }
   return TRUE;
 }
@@ -371,6 +373,8 @@ int main(int argc, char *argv[]) {
     g_printerr ("Not all elements could be created.\n");
     return -1;
   }
+  printf("시작위치(s) : ");
+  scanf("%d", &start_position);
 
   /* Set the URI to play */
   g_object_set (data.playbin, "uri", "https://www.freedesktop.org/software/gstreamer-sdk/data/media/sintel_trailer-480p.webm", NULL);

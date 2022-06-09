@@ -4,33 +4,29 @@
 -   Socket: 서버는 통신을 위한 소켓을 생성하여 포트를 할당하고 클라이언트의 통신 요청 시 클라이언트와 연결하여 통신하는 네트워크 기술이다. -->
 
 
-1. `IF01`: 사용자 등록
+1. `IF01`: 회원가입
 -  `IF01-1`: 사용자 정보를 서버로 전송
    - cmd [0x00]
    - 데이터 규격
 ```c
 char cmd;
 typedef struct UserInfo{
-    unsigned int id;
     char name[16];
     unsigned int age;
     unsigned int sex;
 } UserInfo;
 ```
 
--   `IF01-2`: 사용자 등록 성공 여부를 서버로부터 수신   
+-   `IF01-2`: 사용자 ID값을 서버로부터 수신   
     - cmd [0x00]
     - 데이터 규격
-    - is_success : 0 -> 등록 성공
-    - is_success : 1 -> 등록 실패
 ```c
 char cmd;
-int is_success;
+unsigned int id;
 ```
 
 
-
-2.  `IF02`: 사용자 로그인 요청
+1.  `IF02`: 사용자 로그인 요청
 -   `IF02-1`: 사용자 ID를 서버로 전송
     -   cmd: [0x01]
     -   데이터 규격
