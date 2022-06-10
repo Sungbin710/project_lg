@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 #include "interface.h"
 
 int send_to_server(int clnt_sock, char cmd, char *buf){
@@ -37,6 +40,22 @@ int send_to_server(int clnt_sock, char cmd, char *buf){
 
 
 int receive_from_server(int clnt_sock, char *buf, int timeout_ms){
-    
+    int recv_len = 0;
+    struct timeval timeout;
+    fd_set readFds;
+
+    timeout.tv_sec = 0;
+    timeout.tv_usec = timeout_ms * 1000;
+
+    FD_ZERO(&readFds);
+    FD_SET(fd, &readFds);
+    select(fd+1, &readFds, NULL, NULL, &timeout);
+
+    if(FD_ISSET(fd, &readFds))
+    {
+        recv_len = recv(fd, buf, recv_len, 0);
+    }
+
+	return recv_len;
 
 }
