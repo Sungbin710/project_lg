@@ -23,7 +23,7 @@ char *make_realpath(){
 	printf("media name: ");
 	scanf("%s", video_name);
 
-	strcat(path,"/video/");
+	strcat(path,"/videos/");
 	strcat(path, video_name);
 
 	if( access(path, F_OK) != -1){

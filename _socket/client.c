@@ -8,12 +8,20 @@
 #include "custom_struct.h"
 #include "login.h"
 
+
+#include <bsd/unistd.h>
+
+
 extern int user_state;
 
 void error_handling(char* message);
 
-int main(int argc, char* argv[])
+
+int main(int argc, char* argv[], char *envp[])
 {
+	setproctitle_init(argc, argv, envp);
+	int clnt_sock;
+	/*
 	int clnt_sock;
 	struct sockaddr_in serv_addr;
 
@@ -35,12 +43,7 @@ int main(int argc, char* argv[])
 	if(connect(clnt_sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == -1)
 		error_handling("connect error");
 
-	//연결이 성공적으로 되었으면 데이터 받기
-	// if(read(clnt_sock, message, sizeof(message)-1) == -1)
-		// error_handling("read error");
-
-	// if(read(clnt_sock, message, sizeof(UserInfo)) == -1)
-	// 	error_handling("read error");
+	*/
 
     
 	while(1){
@@ -82,8 +85,22 @@ int main(int argc, char* argv[])
 			printf("4. exit\n");
 			scanf("%d: ", &choice_num);
 
+			char *playlist[1000];
+			int play_num = -1;
+			int ret = -1;
 			switch(choice_num){
 				case 1:
+					// 자료구조
+					
+					ret = print_playlist(playlist, &play_num);
+					if(ret == 0){ // SUCCESS
+						//파일 이름 입력 받기
+  						setproctitle("%s",playlist[play_num]);	
+						play_media(clnt_sock, playlist[play_num]);
+					}
+					// for(int i=0; i<1000; ++i)
+					// 	free(playlist[i]);
+						
 					break;
 				case 2:
 					Print_UserInfo();

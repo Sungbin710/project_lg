@@ -1,20 +1,42 @@
 CC = gcc
 CFLAGS = -Wall
-TARGET = client
+TARGET = play_media
 
-all: client server
 
-client: client.o login.o
-	$(CC) $(CFLAGS) -o client client.o login.o
 
-client.o: client.c
-	gcc $(CFLAGS) -c client.c
+play_media: play_media.c login.c connect.c
+	$(CC) -o $@ $^ `pkg-config --cflags --libs gstreamer-video-1.0 gtk+-3.0 gstreamer-1.0` -lbsd
+ 
+		
+# play_media: play_media.o login.o connect.o
+# 	$(CC) -o $@ $^
 
-login.o: login.c
-	gcc $(CFLAGS) -c login.c
+# play_media.o: play_media.c
+# 	$(CC) -o $@ $^ `pkg-config --cflags --libs gstreamer-video-1.0 gtk+-3.0 gstreamer-1.0` -lbsd
 
-server:
-	gcc $(CFLAGS) -o server server.c
+
+# login.o: login.c
+# 	$(CC) -o $@ $^
+
+# connect.o: connect.c
+# 	$(CC) -o $@ $^
+
+
+# client: client.o login.o 
+# 	$(CC) $(CFLAGS) -o $@ $^ 
+
+# client.o: client.c
+# 	$(CC) $(CFLAGS) -c $^ `pkg-config --cflags --libs gstreamer-video-1.0 gtk+-3.0 gstreamer-1.0` -lbsd
+	
+
+# play_media.o: play_media.c
+# 	$(CC) $(CFLAGS) -c $^ `pkg-config --cflags --libs gstreamer-video-1.0 gtk+-3.0 gstreamer-1.0`
+
+# login.o: login.c
+# 	$(CC) $(CFLAGS) -c $^
+
+# server: server.c
+# 	$(CC) $(CFLAGS) -o $@ $^
 
 
 clean:

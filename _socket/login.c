@@ -7,13 +7,12 @@
 #include <errno.h>
 
 #include "login.h"
-#include "custom_struct.h"
-#include "interface_cmd.h"
+#include "interface.h"
 #include "connect.h"
 
 // before login : 1 / after login : 2
 int user_state = 1;
-unsigned int user_id;
+unsigned int user_id = -1;
 
 int register_user(int clnt_sock){
     
@@ -88,44 +87,52 @@ int register_user(int clnt_sock){
 }
 
 int login(int clnt_sock){
-    
-	char msg[BUFFER_SIZE];	
-	
-    printf("로그인을 위해 ID를 입력해주세요.\n");
-    printf("ID: "); scanf("%d, ", &user_id);
-
-	msg[0] = LOGIN;
-	memcpy(&msg[1], &user_id, sizeof(unsigned int));
-
-    send(clnt_sock, msg, sizeof(unsigned int) + 1, 0);
-	
-	printf("login request send\n");
-
-	memset(msg, 0, BUFFER_SIZE);
-
-	recv(clnt_sock, msg, BUFFER_SIZE, 0);
-	char cmd = msg[0];
-	int is_login;
-	memcpy(&is_login, &msg[1], sizeof(int));
-
-	// normal receive
-	if(cmd == LOGIN){
-
-		if(!is_login){
-			printf("login success\n");
-			user_state = 2;
-			return 0;
-		}
-		else{
-			printf("login fail\n");
-			return 1;
-		}
-
-	}
-    else{
-        printf("잘못된 값이 수신되었습니다.");
-        return 1;
-    }
-
-
+    printf("login success\n");
+	user_state = 2;
+	return 0;
 }
+
+// int login(int clnt_sock){
+    
+// 	char msg[BUFFER_SIZE];	
+	
+//     printf("로그인을 위해 ID를 입력해주세요.\n");
+//     printf("ID: "); scanf("%d, ", &user_id);
+
+// 	msg[0] = LOGIN;
+// 	memcpy(&msg[1], &user_id, sizeof(unsigned int));
+
+//     send(clnt_sock, msg, sizeof(unsigned int) + 1, 0);
+	
+// 	printf("login request send\n");
+
+// 	memset(msg, 0, BUFFER_SIZE);
+
+// 	recv(clnt_sock, msg, BUFFER_SIZE, 0);
+// 	char cmd = msg[0];
+// 	int is_login;
+// 	memcpy(&is_login, &msg[1], sizeof(int));
+
+// 	// normal receive
+// 	if(cmd == LOGIN){
+
+// 		if(!is_login){
+// 			printf("login success\n");
+// 			user_state = 2;
+// 			return 0;
+// 		}
+// 		else{
+// 			printf("login fail\n");
+//          user_id = -1
+// 			return 1;
+// 		}
+
+// 	}
+//     else{
+//         printf("잘못된 값이 수신되었습니다.");
+//         user_id = -1
+//         return 1;
+//     }
+
+
+// }
