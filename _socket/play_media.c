@@ -18,38 +18,20 @@
 #include <dirent.h>
 
 #include <stdio.h>
-// #include <stdlib.h>
+#include <errno.h>
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-// #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <sys/stat.h> /* stat -> file size */
-#include "custom_struct.h"
-#include "login.h"
-#include "connect.h"
+#include "interface.h"
+#include "play_media.h"
+#include "playlist.h"
 
 int start_position;
 
-/* Structure to contain all our information, so we can pass it around */
-typedef struct _CustomData {
-  GstElement *playbin;           /* Our one and only pipeline */
-
-  GtkWidget *slider;              /* Slider widget to keep track of current position */
-  GtkWidget *streams_list;        /* Text widget to display info about the streams */
-  gulong slider_update_signal_id; /* Signal ID for the slider update signal */
-
-  GstState state;                 /* Current state of the pipeline */
-  gint64 duration;                /* Duration of the clip, in nanoseconds */
-  gboolean is_start;
-  gint64 last_playback;
-} CustomData;
-
-static void
-seek_to_time (GstElement *pipeline,
-          gint64      time_nanoseconds)
-{
+static void seek_to_time (GstElement *pipeline, gint64 time_nanoseconds){
   if (!gst_element_seek (pipeline, 1.0, GST_FORMAT_TIME, GST_SEEK_FLAG_FLUSH,
                          GST_SEEK_TYPE_SET, time_nanoseconds,
                          GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE)) {
@@ -206,7 +188,8 @@ static gboolean refresh_ui (CustomData *data) {
   }
 	
   if(data->is_start){
-    current = start_position * GST_SECOND;	
+    
+	current = start_position * GST_SECOND;	
 	seek_to_time(data->playbin, current);
     g_signal_handler_block (data->slider, data->slider_update_signal_id);
     /* Set the position of the slider to the current pipeline position, in SECONDS */
@@ -215,7 +198,7 @@ static gboolean refresh_ui (CustomData *data) {
     g_signal_handler_unblock (data->slider, data->slider_update_signal_id);
 	data->is_start = FALSE;
   }
-  else{
+
     if (gst_element_query_position (data->playbin, GST_FORMAT_TIME, &current)) {
       /* Block the "value-changed" signal, so the slider_cb function is not called
       * (which would trigger a seek the user has not requested) */
@@ -225,7 +208,6 @@ static gboolean refresh_ui (CustomData *data) {
       /* Re-enable the signal */
       g_signal_handler_unblock (data->slider, data->slider_update_signal_id);
     }
-  }
   return TRUE;
 }
 
@@ -259,6 +241,7 @@ static void error_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
 static void eos_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
   g_print ("End-Of-Stream reached.\n");
   gst_element_set_state (data->playbin, GST_STATE_READY);
+
 }
 
 /* This function is called when the pipeline changes states. We use it to
@@ -370,74 +353,55 @@ static void application_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
 }
 
 
-int print_playlist(char *playlist[], int *play_num){
-	
-	DIR *dp;
-	struct dirent *dent;
+int play_media(int clnt_sock) {
 
-  char path[1024];
-	
-	/* find realpath */
-	// if(realpath(".", path) == NULL){
-	//   perror("realpath error");
-	//   return 1;
-	// }
-
-  getcwd(path,sizeof(path));
-	strcat(path, "/videos/");
-
-	if((dp=opendir(path)) == NULL){
-		perror("opendir: ");
-    return 1;
-    // exit(1);
-	}		
-	
-
-	int list = 0;
-  printf("========재생 목록========\n");
-	while((dent=readdir(dp))){
-    int len;
-		// printf("%d ", (int)dent->d_ino);
-    if(strcmp(dent->d_name, ".") == 0|| strcmp(dent->d_name, "..") == 0){
-      continue;
-    }
-		printf("%d ", ++list);
-		printf("%s\n", dent->d_name);
-
-    len = strlen(dent->d_name) + 1;
-    playlist[list] = (char *)malloc(sizeof(char) * len);
-
-    strcpy(playlist[list],dent->d_name);
-	}
-  printf("===================\n");
-
-	if(list == 0){
-		printf("재생할 수 있는 목록이 없습니다.\n");
-    closedir(dp);
-    return 1;
-	}
-
-  printf("재생할 미디어 번호를 입력하세요.\n");
-  scanf("%d", play_num);
-
-  if(*play_num <= 0 || *play_num > list){
-    printf("잘못된 번호를 입력하셨습니다.\n");
-    return 2;
-  }
-	
-	closedir(dp);
-	return 0;
-
-}
-
-
-int play_media(int clnt_sock, char file_path[]) {
   CustomData data;
   GstStateChangeReturn ret;
   GstBus *bus;
 
-  // //파일 이름 입력 받기
-  // setproctitle("%s",name);	
+	MediaInfo media;
+	char *playlist[1000];
+	int list_len;
+
+	int media_num;
+	char file_path[512] = "file://";
+	struct stat file_info;
+	getcwd(&file_path[strlen(file_path)], sizeof(file_path));
+	strcat(file_path, "/videos/");
+ 
+	if(print_playlist(playlist, &list_len) != 0){ // SUCCESS
+	}
+
+  //파일 이름 입력 받기
+  printf("choice media num: ");
+  scanf("%d", &media_num);
+
+  if(!(media_num > 0 && media_num <= list_len)){
+	printf("incorrect number\n");
+  }
+
+  strcat(file_path, playlist[media_num]);
+
+  if(stat(&file_path[strlen("file://")], &file_info) != 0){
+	printf("stat error\n");
+	perror("");
+  }
+
+	if(is_playable(file_path)){
+		//printf("isn't playable\n");
+		return 1;
+	}
+
+	/* change window name */ 
+	setproctitle("%s",playlist[media_num]);	
+	strcpy(media.file_name, playlist[media_num]);
+	media.file_size = file_info.st_size;
+ 
+	/* Deallocation */
+	for(int i=1; i<=list_len; ++i){
+		free(playlist[i]);
+	}
+
 
   /* Initialize GTK */
   // gtk_init (&argc, &argv);
@@ -459,12 +423,14 @@ int play_media(int clnt_sock, char file_path[]) {
     g_printerr ("Not all elements could be created.\n");
     return -1;
   }
+  
   printf("시작위치(s) : ");
   scanf("%d", &start_position);
   printf("%s\n", file_path);
   /* Set the URI to play */
   // g_object_set (data.playbin, "uri", "https://www.freedesktop.org/software/gstreamer-sdk/data/media/sintel_trailer-480p.webm", NULL);
   g_object_set (data.playbin, "uri", file_path, NULL);
+  
 
   /* Connect to interesting signals in playbin */
   g_signal_connect (G_OBJECT (data.playbin), "video-tags-changed", (GCallback) tags_cb, &data);
@@ -506,139 +472,3 @@ int play_media(int clnt_sock, char file_path[]) {
   return 0;
 }
 
-
-extern int user_state;
-extern int user_id;
-
-void error_handling(char* message);
-
-
-int main(int argc, char* argv[], char *envp[])
-{
-	setproctitle_init(argc, argv, envp);
-	int clnt_sock;
-	/*
-	int clnt_sock;
-	struct sockaddr_in serv_addr;
-
-	//TCP연결지향형이고 ipv4 도메인을 위한 소켓을 생성
-	clnt_sock = socket(PF_INET, SOCK_STREAM, 0);
-	if(clnt_sock == -1)
-		error_handling("socket error");
-
-	//인자로 받은 서버 주소 정보를 저장
-	memset(&serv_addr, 0, sizeof(serv_addr));
-	//서버주소체계는 IPv4이다
-	serv_addr.sin_family = AF_INET;                  
-	//서버주소 IP저장해주기(인자로 받은거 넘겨주기)
-	serv_addr.sin_addr.s_addr = inet_addr(argv[1]);  
-	//서버주소 포트번호 인자로 받은거 저장해주기
-	serv_addr.sin_port = htons(atoi(argv[2]));
-
-	//클라이언트 소켓부분에 서버를 연결!
-	if(connect(clnt_sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == -1)
-		error_handling("connect error");
-
-	*/
-
-    
-	while(1){
-		
-		if(user_state == 1){
-		
-			int choice_num;		
-      printf("===================\n");
-			printf("enter the number\n");
-			printf("1. register\n");
-			printf("2. login\n");
-			printf("3. exit\n");
-      printf("===================\n");
-			printf("choice: "); scanf("%d", &choice_num);
-
-			switch(choice_num){
-				case 1:
-					register_user(clnt_sock);
-					break;
-				case 2:
-					login(clnt_sock);	
-					break;
-				case 3:
-					printf("exit program\n");
-					exit(0);
-				default:
-					break;
-			}
-			
-
-		}
-		else if(user_state == 2){
-			
-			int choice_num;		
-      printf("===================\n");
-			printf("enter the number\n");
-			printf("1. play media\n");
-			printf("2. print user information\n");
-			printf("3. logout\n");
-			printf("4. exit\n");
-      printf("===================\n");
-			printf("choice: "); scanf("%d", &choice_num);
-
-			char *playlist[1000];
-			int play_num = -1;
-			int ret = -1;
-      char file_path[512] = "file://";
-      char path[256];
-      struct stat file_info;
-      getcwd(path, sizeof(path));
-      strcat(path, "/videos/");
-			switch(choice_num){
-				case 1:
-					// 자료구조
-					
-					ret = print_playlist(playlist, &play_num);
-					if(ret == 0){ // SUCCESS
-						//파일 이름 입력 받기
-            strcat(path, playlist[play_num]);
-            if( 0 > stat(path, &file_info)){
-              perror();
-              break;
-            }
-            // send(clnt_fd, send_msg, sizeof)
-
-            strcat(file_path, path);
-            
-  					setproctitle("%s",playlist[play_num]);	
-            
-						play_media(clnt_sock, file_path);
-					}
-          // playlist 메모리 해제 필요
-					break;
-				case 2:
-					// Print_UserInfo();
-					break;
-				case 3:
-					// printf("ID: %u is logout\n", id);
-					user_state = 1; 
-					break;
-				case 4:
-					printf("exit program\n");
-					exit(0);
-				default:
-					break;
-			}
-		}
-
-
-	};
-
-	
-	//통신 후 소켓 클로우즈
-	close(clnt_sock);
-	return 0;
-}
-void error_handling(char* message)
-{
-	fputs(message, stderr);
-	fputc('\n', stderr);
-	exit(1);
-}

@@ -1,28 +1,37 @@
+#include <gtk/gtk.h>
+#include <gst/gst.h>
+#include <gst/video/videooverlay.h>
+#include <gst/pbutils/pbutils.h>
+
+#include <sys/types.h>
+#include <bsd/unistd.h>
+#include <dirent.h>
+
+#include <string.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <errno.h>
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-#include <sys/types.h>
 #include <sys/socket.h>
-#include "custom_struct.h"
+#include <unistd.h>
+#include <sys/stat.h> /* stat -> file size */
 #include "login.h"
-
-
-#include <bsd/unistd.h>
-
+#include "interface.h"
+#include "play_media.h"
+#include "discover_media.h"
 
 extern int user_state;
-
-void error_handling(char* message);
-
+extern unsigned int user_id;
 
 int main(int argc, char* argv[], char *envp[])
 {
 	setproctitle_init(argc, argv, envp);
 	int clnt_sock;
+	
+
+	//connect_to_server();
 	/*
-	int clnt_sock;
 	struct sockaddr_in serv_addr;
 
 	//TCP연결지향형이고 ipv4 도메인을 위한 소켓을 생성
@@ -42,7 +51,6 @@ int main(int argc, char* argv[], char *envp[])
 	//클라이언트 소켓부분에 서버를 연결!
 	if(connect(clnt_sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == -1)
 		error_handling("connect error");
-
 	*/
 
     
@@ -51,12 +59,13 @@ int main(int argc, char* argv[], char *envp[])
 		if(user_state == 1){
 		
 			int choice_num;		
-	
+			printf("===================\n");
 			printf("enter the number\n");
 			printf("1. register\n");
 			printf("2. login\n");
 			printf("3. exit\n");
-			scanf("%d", &choice_num);
+			printf("===================\n");
+			printf("choice: "); scanf("%d", &choice_num);
 
 			switch(choice_num){
 				case 1:
@@ -67,6 +76,7 @@ int main(int argc, char* argv[], char *envp[])
 					break;
 				case 3:
 					printf("exit program\n");
+					close(clnt_sock);
 					exit(0);
 				default:
 					break;
@@ -77,40 +87,38 @@ int main(int argc, char* argv[], char *envp[])
 		else if(user_state == 2){
 			
 			int choice_num;		
-
+			printf("===================\n");
 			printf("enter the number\n");
 			printf("1. play media\n");
-			printf("2. print user information\n");
-			printf("3. logout\n");
-			printf("4. exit\n");
-			scanf("%d: ", &choice_num);
+			printf("2. print media information\n");
+			printf("3. print user information\n");
+			printf("4. logout\n");
+			printf("5. exit\n");
+			printf("===================\n");
+			printf("choice: "); scanf("%d", &choice_num);
 
-			char *playlist[1000];
-			int play_num = -1;
-			int ret = -1;
+
+			
 			switch(choice_num){
 				case 1:
-					// 자료구조
-					
-					ret = print_playlist(playlist, &play_num);
-					if(ret == 0){ // SUCCESS
-						//파일 이름 입력 받기
-  						setproctitle("%s",playlist[play_num]);	
-						play_media(clnt_sock, playlist[play_num]);
-					}
-					// for(int i=0; i<1000; ++i)
-					// 	free(playlist[i]);
-						
+					play_media(clnt_sock);
+
 					break;
 				case 2:
-					Print_UserInfo();
+					print_media_info();
+					// Print_UserInfo();
 					break;
 				case 3:
-					printf("ID: %u is logout\n");
-					user_state = 1; 
+					
+					// Print_UserInfo();
 					break;
 				case 4:
+					printf("ID: %u is logout\n", user_id);
+					user_state = 1; 
+					break;
+				case 5:
 					printf("exit program\n");
+					close(clnt_sock);
 					exit(0);
 				default:
 					break;

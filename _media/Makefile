@@ -1,3 +1,10 @@
+
+media_play: media_play.c
+	gcc -o $@ $^ `pkg-config --cflags --libs gstreamer-video-1.0 gtk+-3.0 gstreamer-1.0 gstreamer-pbutils-1.0`
+
+basic9: basic9.c
+	gcc -o $@ $^ `pkg-config --cflags --libs gstreamer-1.0 gstreamer-pbutils-1.0`
+
 init: init.c
 	gcc -o $@ $^ `pkg-config --cflags --libs gstreamer-1.0`
 

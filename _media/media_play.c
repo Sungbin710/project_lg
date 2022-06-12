@@ -3,7 +3,7 @@
 #include <gtk/gtk.h>
 #include <gst/gst.h>
 #include <gst/video/videooverlay.h>
-
+#include <gst/pbutils/pbutils.h>
 #include <gdk/gdk.h>
 #if defined (GDK_WINDOWING_X11)
 #include <gdk/gdkx.h>
@@ -16,6 +16,20 @@
 int start_position;
 
 
+/* Structure to contain all our information, so we can pass it around */
+typedef struct _CustomData {
+  GstElement *playbin;           /* Our one and only pipeline */
+  GstDiscoverer *discoverer; 
+
+  GtkWidget *slider;              /* Slider widget to keep track of current position */
+  GtkWidget *streams_list;        /* Text widget to display info about the streams */
+  gulong slider_update_signal_id; /* Signal ID for the slider update signal */
+
+  GstState state;                 /* Current state of the pipeline */
+  gint64 duration;                /* Duration of the clip, in nanoseconds */
+  gboolean is_start;
+  gint64 last_playback;
+} CustomData;
 
 static void
 seek_to_time (GstElement *pipeline,
@@ -374,7 +388,7 @@ int print_playlist(){
 
 }
 
-int play_media() {
+int main(int argc, char *argv[]) {
   CustomData data;
   GstStateChangeReturn ret;
   GstBus *bus;
@@ -391,6 +405,12 @@ int play_media() {
   memset (&data, 0, sizeof (data));
   data.duration = GST_CLOCK_TIME_NONE;
   data.is_start = TRUE;
+  data.discoverer = gst_discoverer_new(5 * GST_SECOND, NULL);
+  if(!data.discoverer){
+	g_print("Error creating discoverer instance\n");
+	return -1;
+  }
+
 
   /* Create the elements */
   data.playbin = gst_element_factory_make ("playbin", "playbin");
@@ -399,17 +419,34 @@ int play_media() {
     g_printerr ("Not all elements could be created.\n");
     return -1;
   }
+
+  char path[256] = "file://";
+  getcwd(&path[strlen(path)], sizeof(path));
+  strcat(path, "/videos/");
+
+  char media_name[256];;	
+  printf("media name: ");
+  scanf("%s", media_name);
+  strcat(path, media_name);
+
   printf("시작위치(s) : ");
   scanf("%d", &start_position);
 
+
+
+  printf("%s\n",path); 
+  
   /* Set the URI to play */
-  g_object_set (data.playbin, "uri", "https://www.freedesktop.org/software/gstreamer-sdk/data/media/sintel_trailer-480p.webm", NULL);
+  //g_object_set (data.playbin, "uri", "https://www.freedesktop.org/software/gstreamer-sdk/data/media/sintel_trailer-480p.webm", NULL);
+  g_object_set (data.playbin, "uri", path, NULL);
+
 
   /* Connect to interesting signals in playbin */
   g_signal_connect (G_OBJECT (data.playbin), "video-tags-changed", (GCallback) tags_cb, &data);
   g_signal_connect (G_OBJECT (data.playbin), "audio-tags-changed", (GCallback) tags_cb, &data);
   g_signal_connect (G_OBJECT (data.playbin), "text-tags-changed", (GCallback) tags_cb, &data);
 
+  g_signal_connect (data.discoverer, "discovered", G_CALLBACK (on_discovered_cb), &data);	
   /* Create the GUI */
   create_ui (&data);
 

@@ -61,43 +61,44 @@ int main(int argc, char* argv[])
     // write(clnt_sock, msg, sizeof(UserInfo) + 1);
     recv(clnt_sock, recv_msg, sizeof(UserInfo) + 1, 0);
     
-    int cmd = recv_msg[0];
+    char cmd = recv_msg[0];
 
 
 	// register 
-	/*
-    UserInfo *user = (UserInfo *)(recv_msg+1);
-    
-    printf("cmd: %d \n", cmd);
-    printf("id: %u \n", user->id);
-    printf("name: %s \n", user->name);
-    printf("age: %u \n", user->age);
-    printf("sex: %u \n", user->sex);
 	
-	free(user);
+//    UserInfo *user = (UserInfo *)(recv_msg+1);
+    
+//    printf("cmd: %d \n", cmd);
+//    printf("id: %u \n", user->id);
+//    printf("name: %s \n", user->name);
+//    printf("age: %u \n", user->age);
+//    printf("sex: %u \n", user->sex);
+	
+//	free(user);
 
 	char send_msg[128];
     send_msg[0] = 0;
-    int success = 0;
-    memcpy(&send_msg[1], &success, sizeof(int));
+    unsigned id = 3;
+    memcpy(&send_msg[1], &id, sizeof(int));
 
     send(clnt_sock, send_msg, sizeof(int) + 1, 0);
 
 	printf("send complete\n");
-	*/
 	
-/*
+	
 	// login
-	unsigned int *id = (unsigned int *)(recv_msg+1);
 	
+	recv(clnt_sock, recv_msg, 64, 0);
+
+
 	//
 	// manage in server
 	printf("cmd: %d\n", cmd);
-	printf("id: %u\n", *id);
+	printf("id: %u\n", id);
 
 	//
-
-	char send_msg[128];
+	memset(send_msg, 0, 128);
+	//char send_msg[128];
     send_msg[0] = 1;
     int success = 0;
     memcpy(&send_msg[1], &success, sizeof(int));
@@ -105,11 +106,12 @@ int main(int argc, char* argv[])
     send(clnt_sock, send_msg, sizeof(int) + 1, 0);
 
 	printf("send complete\n");
-*/
+    
+/*
 	while(1){
 
 	};
-
+*/
     //소켓들 닫기
     close(clnt_sock);
     close(serv_sock);

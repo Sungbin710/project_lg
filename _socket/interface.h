@@ -2,6 +2,7 @@
 #define _INTER_H
 
 #define BUFFER_SIZE  512
+#define TIMEOUT_MS 1000
 
 enum CMD{
     REGISTER = 0,
@@ -12,9 +13,8 @@ enum CMD{
 };
 
 
-
 typedef struct UserInfo{
-    unsigned int id;
+//    unsigned int id;
     char name[16];
     unsigned int age;
     unsigned int sex;
@@ -27,5 +27,8 @@ typedef struct MediaInfo{
     signed long played;
 } MediaInfo;
 
+
+int send_to_server(int sockfd, char cmd, char *buf);
+int receive_from_server(int sockfd, int cmd,  char *buf, int timeout_ms);
 
 #endif /* _INTER_H */
